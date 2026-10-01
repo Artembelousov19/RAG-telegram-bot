@@ -1,0 +1,62 @@
+import os
+import urllib.request
+import xml.etree.ElementTree as ET
+import time
+
+QUERY = "Retrieval+Augmented+Generation" 
+
+os.makedirs("articles_data", exist_ok=True)
+print("Начинаем скачивание 500 реальных статей с arXiv...")
+
+# Настройка прямого соединения в обход системных прокси
+proxy_handler = urllib.request.ProxyHandler({})
+opener = urllib.request.build_opener(proxy_handler)
+opener.addheaders = [('User-Agent', 'AcademicRAGProject/1.0 (mailto:student@example.com)')]
+
+batch_size = 20  # Скачиваем небольшими порциями
+saved_count = 0
+start = 0
+
+while saved_count < 500 and start < 1000:
+    url = f'https://export.arxiv.org/api/query?search_query=all:{QUERY}&start={start}&max_results={batch_size}'
+    
+    # Делаем до 5 попыток на случай временного бана 429/503
+    success = False
+    for attempt in range(5):
+        try:
+            response = opener.open(url)
+            data = response.read().decode('utf-8')
+            root = ET.fromstring(data)
+            
+            entries = root.findall('{http://www.w3.org/2005/Atom}entry')
+            if not entries:
+                break
+
+            for idx, entry in enumerate(entries):
+                title = entry.find('{http://www.w3.org/2005/Atom}title').text.strip().replace('\n', ' ')
+                summary = entry.find('{http://www.w3.org/2005/Atom}summary').text.strip().replace('\n', ' ')
+                
+                saved_count += 1
+                filename = f"articles_data/doc_{saved_count:03d}.txt"
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write(f"Title: {title}\n\nAbstract:\n{summary}")
+                
+                if saved_count >= 500:
+                    break
+                    
+            print(f"Загружено реальных статей: {saved_count} / 500")
+            success = True
+            start += batch_size
+            time.sleep(3)  # Безопасная пауза в 3 секунды между запросами
+            break
+
+        except Exception as e:
+            wait_time = (attempt + 1) * 5
+            print(f"Ошибка {e}. Лимит или сбой, ждем {wait_time} секунд...")
+            time.sleep(wait_time)
+
+    if not success:
+        print("Пропускаем порцию из-за частых ошибок серверов arXiv...")
+        start += batch_size
+
+print("\n УСПЕХ! 500 реальных научных статей скачаны в папку 'articles_data'!")

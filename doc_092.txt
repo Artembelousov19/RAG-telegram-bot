@@ -1,0 +1,4 @@
+Title: Continuous Health Interface Event Retrieval
+
+Abstract:
+Knowing the state of our health at every moment in time is critical for advances in health science. Using data obtained outside an episodic clinical setting is the first step towards building a continuous health estimation system. In this paper, we explore a system that allows users to combine events and data streams from different sources to retrieve complex biological events, such as cardiovascular volume overload. These complex events, which have been explored in biomedical literature and which we call interface events, have a direct causal impact on relevant biological systems. They are the interface through which the lifestyle events influence our health. We retrieve the interface events from existing events and data streams by encoding domain knowledge using an event operator language.
